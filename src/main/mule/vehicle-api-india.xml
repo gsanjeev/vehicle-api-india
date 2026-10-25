@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+
+    <http:listener-config name="apiHttpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+
+    <apikit:config name="vehicle-api-india-config" api="api/vehicle-api-india.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+
+    <flow name="vehicle-api-india-main">
+        <http:listener config-ref="apiHttpListenerConfig" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="vehicle-api-india-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <set-variable variableName="httpStatus" value="400" />
+                <set-payload value='#[{"code":"INVALID_REQUEST","message":"Bad request"}]' />
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <set-variable variableName="httpStatus" value="404" />
+                <set-payload value='#[{"code":"RESOURCE_NOT_FOUND","message":"Resource not found"}]' />
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <set-variable variableName="httpStatus" value="405" />
+                <set-payload value='#[{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}]' />
+            </on-error-propagate>
+            <on-error-propagate type="APP:ORDER_NOT_FOUND">
+                <set-variable variableName="httpStatus" value="404" />
+                <set-payload value='#[{"code":"ORDER_NOT_FOUND","message":"No order found with orderNum: " ++ payload.orderNum}]' />
+            </on-error-propagate>
+            <on-error-propagate>
+                <set-variable variableName="httpStatus" value="500" />
+                <set-payload value='#[{"code":"INTERNAL_SERVER_ERROR","message":"Internal server error"}]' />
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <flow name="post:\mcd\notify:application\json:vehicle-api-india-config">
+        <logger level="INFO" message="Received MCD notification request: #[payload]" />
+        <set-variable variableName="httpStatus" value="204" />
+        <set-payload value="#[null]" />
+    </flow>
+
+    <flow name="post:\kdpn\nmon:application\json:vehicle-api-india-config">
+        <logger level="INFO" message="Requesting order detail for orderNum #[payload.orderNum]" />
+
+        <choice>
+            <when expression="#[(payload.orderNum default '') == 'ORD-2026-00123']">
+                <set-variable variableName="httpStatus" value="200" />
+                <set-payload value='#[output application/json --- {
+                    "orderNum": "ORD-2026-00123",
+                    "type": "VEHICLE_ORDER",
+                    "prjId": "PRJ-001",
+                    "validTill": "2026-12-31",
+                    "status": "ACTIVE",
+                    "vehicleDetails": {
+                        "make": "Toyota",
+                        "model": "Camry",
+                        "year": 2026,
+                        "vin": "1HGBH41JXMN109186"
+                    },
+                    "createdAt": "2026-01-15T10:30:00Z",
+                    "updatedAt": "2026-10-25T08:00:00Z"
+                }]' />
+            </when>
+            <otherwise>
+                <raise-error type="APP:ORDER_NOT_FOUND" description="No order found with orderNum: #[payload.orderNum]" />
+            </otherwise>
+        </choice>
+    </flow>
+
+</mule>
