@@ -49,38 +49,4 @@
         </error-handler>
     </flow>
 
-    <flow name="post:\mcd\notify:application\json:vehicle-api-india-config">
-        <logger level="INFO" message="Received MCD notification request: #[payload]" />
-        <set-variable variableName="httpStatus" value="204" />
-        <set-payload value="#[null]" />
-    </flow>
-
-    <flow name="post:\kdpn\nmon:application\json:vehicle-api-india-config">
-        <logger level="INFO" message="Requesting order detail for orderNum #[payload.orderNum]" />
-
-        <choice>
-            <when expression="#[(payload.orderNum default '') == 'ORD-2026-00123']">
-                <set-variable variableName="httpStatus" value="200" />
-                <set-payload value='#[output application/json --- {
-                    "orderNum": "ORD-2026-00123",
-                    "type": "VEHICLE_ORDER",
-                    "prjId": "PRJ-001",
-                    "validTill": "2026-12-31",
-                    "status": "ACTIVE",
-                    "vehicleDetails": {
-                        "make": "Toyota",
-                        "model": "Camry",
-                        "year": 2026,
-                        "vin": "1HGBH41JXMN109186"
-                    },
-                    "createdAt": "2026-01-15T10:30:00Z",
-                    "updatedAt": "2026-10-25T08:00:00Z"
-                }]' />
-            </when>
-            <otherwise>
-                <raise-error type="APP:ORDER_NOT_FOUND" description="No order found with orderNum: #[payload.orderNum]" />
-            </otherwise>
-        </choice>
-    </flow>
-
 </mule>
