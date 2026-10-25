@@ -8,12 +8,6 @@
         http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
         http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
 
-    <http:listener-config name="apiHttpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="${http.port}" />
-    </http:listener-config>
-
-    <apikit:config name="vehicle-api-india-config" api="api/vehicle-api-india.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-
     <flow name="vehicle-api-india-main">
         <http:listener config-ref="apiHttpListenerConfig" path="/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
