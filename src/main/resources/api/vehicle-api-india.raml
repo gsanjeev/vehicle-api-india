@@ -176,3 +176,74 @@ types:
                   type: string
                 message:
                   type: string
+
+  /bmon:
+    post:
+      displayName: Get Order Details (BMON)
+      description: Retrieve order details by providing an order number. Returns the full order detail object.
+      body:
+        application/json:
+          type: object
+          properties:
+            orderNum:
+              type: string
+              required: true
+              description: The order number to retrieve details for
+          example:
+            orderNum: "ORD-2026-00123"
+      responses:
+        200:
+          description: Order details retrieved successfully.
+          body:
+            application/json:
+              type: OrderDetail
+              example:
+                orderNum: "ORD-2026-00123"
+                type: "VEHICLE_ORDER"
+                prjId: "PRJ-001"
+                validTill: "2026-12-31"
+                status: "ACTIVE"
+                vehicleDetails:
+                  make: "Toyota"
+                  model: "Camry"
+                  year: 2026
+                  vin: "1HGBH41JXMN109186"
+                createdAt: "2026-01-15T10:30:00Z"
+                updatedAt: "2026-10-25T08:00:00Z"
+        400:
+          description: Bad Request - Order number is missing or invalid.
+          body:
+            application/json:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+              example:
+                code: "INVALID_REQUEST"
+                message: "orderNum is required"
+        404:
+          description: Order not found.
+          body:
+            application/json:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+              example:
+                code: "ORDER_NOT_FOUND"
+                message: "No order found with orderNum: ORD-2026-00123"
+        500:
+          description: Internal Server Error.
+          body:
+            application/json:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+
